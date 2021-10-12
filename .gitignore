@@ -120,3 +120,5 @@ train_kp/
 test_kp/
 
 *.pckl
+*_matches_distance.csv
+*_matches_filename.csv
