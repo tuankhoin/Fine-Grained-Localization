@@ -1,7 +1,8 @@
 '''This module stores the clustering functions to be used for the training process
 '''
-import numpy as np
 import cv2
+import numpy as np
+from itertools import combinations
 
 # Clustered Online Cumulative K-Means (CLOCK) 
 def onl_kmeans(data, fnames, max_clusters, max_range, min_size = 2):
