@@ -162,7 +162,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, rat
     # FLANN parameters and initialize
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-    search_params = dict(checks=50)   # or pass empty dictionary
+    search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(index_params,search_params)
     
     kp_test,des_test = sift.detectAndCompute(test_img,None)
@@ -184,7 +184,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, rat
 
         # Store all good matches as per Lowe's Ratio test.
         good = [m for m,n in matches if m.distance < ratio*n.distance]
-        # Need to have 8 pts to do the 8-point algorithm
+        # Need to have 8 points to do the 8-point algorithm
         if len(good) < 8: 
             train_vecs.append(None)
             continue
@@ -199,11 +199,16 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, rat
 
     # For each pair, get all predicted positions and cluster them
     for pt1,pt2 in combinations(range(len(fnames)),2):
-        if train_vecs[pt1] is None or train_vecs[pt2] is None: continue
+        # In case too few match, or duplicate translation vector, skip
+        if train_vecs[pt1] is None or \
+        train_vecs[pt2] is None or \
+        np.allclose(train_vecs[pt1],train_vecs[pt2]): continue
         # Vector D
         displacement = (coords[pt2] - coords[pt1]).reshape(2,1)
         # Vector V: vertical stacking of 2 unit vectors v1,-v2
         unit_vectors = np.append(train_vecs[pt1],train_vecs[pt2], axis=1)
+        # Final guard in case allclose doesn't work properly
+        if np.linalg.det(unit_vectors) < 1e-4: continue
         # Solve this matrix and get b: V[b,c]' = D
         const = np.linalg.solve(unit_vectors,displacement)[0,0]
         # Vector b*v1 goes from Pt1 to Pt_test: Pt_test = Pt1 + b*v1
@@ -230,6 +235,6 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, rat
     # If things go well, take the closest cluster centroid to the initial pred
     cluster_distances = np.sum((cluster_centrals - centroid)**2, axis=1)**0.5
     nearest = np.argmin(cluster_distances)
-    # If they are too far away, SIFT may have been rigged, so cancel that
-    if cluster_distances[nearest] > max_range: return centroid
+    # If they are too far away or too inconsistent, SIFT may have been rigged, so cancel that
+    if cluster_distances[nearest] > max_range or np.max(cluster_count)==1: return centroid
     return cluster_centrals[nearest]
