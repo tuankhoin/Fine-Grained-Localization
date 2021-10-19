@@ -138,7 +138,8 @@ def hist_onl_kmeans(data, hist, fnames, max_clusters, max_range, min_size = 1, t
            cluster_filename[best_cluster], \
            cluster_centrals[best_cluster]
 
-def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, ratio=0.6, max_range=10):
+def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, 
+                             ratio=0.6, max_range=3, max_displacement=10):
     '''Given a training cluster, predict the location of the test image
 
     Params
@@ -150,6 +151,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, rat
     - cam_matrix: Camera intrinsic matrix K
     - ratio: Matching ration threshold to keep as per Lowe's Ratio test
     - max_range: Max distance from centroid to be considered within a cluster
+    - max_displacement: Max distance from centroid to be considered valid result
 
     Returns
     ---
@@ -162,7 +164,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, rat
     # FLANN parameters and initialize
     FLANN_INDEX_KDTREE = 1
     index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-    search_params = dict(checks=50)
+    search_params = dict(checks=100)
     flann = cv2.FlannBasedMatcher(index_params,search_params)
     
     kp_test,des_test = sift.detectAndCompute(test_img,None)
@@ -236,5 +238,5 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, rat
     cluster_distances = np.sum((cluster_centrals - centroid)**2, axis=1)**0.5
     nearest = np.argmin(cluster_distances)
     # If they are too far away or too inconsistent, SIFT may have been rigged, so cancel that
-    if cluster_distances[nearest] > max_range or np.max(cluster_count)==1: return centroid
+    if cluster_distances[nearest] > max_displacement or np.max(cluster_count)==1: return centroid
     return cluster_centrals[nearest]
