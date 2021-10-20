@@ -257,7 +257,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
         # Final guard in case allclose doesn't work properly
         if np.linalg.det(unit_vectors) < 1e-4: continue
         # Solve this matrix and get b: V[b,c]' = D
-        const = np.linalg.solve(unit_vectors,displacement.T)[0,0]
+        const = np.linalg.solve(unit_vectors,displacement.T)[0]
         # Vector b*V1 goes from Pt_test to Pt1: Pt_test = Pt1 - b*v1
         loc = coords[pt1] - const * train_vecs[pt1][[0,2]].flatten()
 
