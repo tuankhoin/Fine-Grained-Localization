@@ -230,7 +230,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
         # In case too few match, or duplicate translation vector, skip
         if train_vecs[pt1] is None or \
         train_vecs[pt2] is None or \
-        np.allclose(train_vecs[pt1],train_vecs[pt2]): continue
+        np.allclose(coords[pt1],coords[pt2]): continue
 
         matches = flann.knnMatch(des_train[pt1],des_train[pt2],k=2)
         good = [m for m,n in matches if m.distance < ratio*n.distance]
@@ -253,13 +253,13 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
         V2 = r3d @ (R @ train_vecs[pt2])
 
         # Vector V: vertical stacking of 2 unit vectors v1,-v2
-        unit_vectors = np.append(V1,-V2, axis=1)
+        unit_vectors = np.append(V1[[0,2]],-V2[[0,2]], axis=1)
         # Final guard in case allclose doesn't work properly
         if np.linalg.det(unit_vectors) < 1e-4: continue
         # Solve this matrix and get b: V[b,c]' = D
         const = np.linalg.solve(unit_vectors,displacement.T)[0,0]
         # Vector b*V1 goes from Pt_test to Pt1: Pt_test = Pt1 - b*v1
-        loc = coords[pt1] - const * train_vecs[pt1].flatten()
+        loc = coords[pt1] - const * train_vecs[pt1][[0,2]].flatten()
 
         # Clustering part
         if cluster_centrals is None:

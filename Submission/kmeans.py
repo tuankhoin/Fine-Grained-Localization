@@ -138,6 +138,28 @@ def hist_onl_kmeans(data, hist, fnames, max_clusters, max_range, min_size = 1, t
            cluster_filename[best_cluster], \
            cluster_centrals[best_cluster]
 
+def rotation_matrix_from_vectors(vec1, vec2):
+    '''Find the rotation matrix that aligns vec1 to vec2
+    
+    Params
+    ---
+    - vec1: A 3d "source" vector
+    - vec2: A 3d "destination" vector
+    
+    Returns
+    ---
+    mat: A transform matrix which when applied to vec1, aligns it with vec2.
+    '''
+    a = (vec1 / np.linalg.norm(vec1)).reshape(3)
+    b = (vec2 / np.linalg.norm(vec2)).reshape(3)
+    v = np.cross(a, b)
+    c = np.dot(a, b)
+    s = np.linalg.norm(v)
+    kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    rotation_matrix = np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
+    return rotation_matrix
+
+
 def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix, 
                              ratio=0.6, max_range=3, max_displacement=10):
     '''Given a training cluster, predict the location of the test image
@@ -171,6 +193,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
     
     kp_train = []
     des_train = []
+    rotation_vecs = []
     train_vecs = []
     cluster_centrals = None
     cluster_count = []
@@ -192,11 +215,14 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
             continue
         pts_train = np.float32([kp[m.queryIdx].pt for m in good]).reshape(-1,1,2)
         pts_test = np.float32([kp_test[m.trainIdx].pt for m in good]).reshape(-1,1,2)
+
         # Get translation matrix from essential matrix
         E,_ = cv2.findEssentialMat(pts_train,pts_test,cam_matrix,method=cv2.FM_LMEDS)
-        _,_,T = cv2.decomposeEssentialMat(E)
+        _,R,T,_ =  cv2.recoverPose(E,pts_train,pts_test,cam_matrix)
+
         # Get x and z axis only, since y is assumed to be the same across pictures
-        train_vecs.append(T[[0,2]])
+        train_vecs.append(T)
+        rotation_vecs.append(R)
 
 
     # For each pair, get all predicted positions and cluster them
@@ -204,17 +230,38 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
         # In case too few match, or duplicate translation vector, skip
         if train_vecs[pt1] is None or \
         train_vecs[pt2] is None or \
-        np.allclose(train_vecs[pt1],train_vecs[pt2]): continue
+        np.allclose(coords[pt1],coords[pt2]): continue
+
+        matches = flann.knnMatch(des_train[pt1],des_train[pt2],k=2)
+        good = [m for m,n in matches if m.distance < ratio*n.distance]
+
+        # Skip if can't do 8-point algorithm
+        if len(good) < 8: continue
+        
+        pts12 = np.float32([kp_train[pt1][m.queryIdx].pt for m in good]).reshape(-1,1,2)
+        pts21 = np.float32([kp_train[pt2][m.trainIdx].pt for m in good]).reshape(-1,1,2)
+
+        # Get translation matrix from essential matrix
+        E,_ = cv2.findEssentialMat(pts12,pts21,cam_matrix,method=cv2.FM_LMEDS)
+        _,R,T,_ = cv2.recoverPose(E,pts12,pts21,cam_matrix)
+
         # Vector D
-        displacement = (coords[pt2] - coords[pt1]).reshape(2,1)
+        displacement = (coords[pt2] - coords[pt1])
+        r3d = rotation_matrix_from_vectors(T, np.insert(displacement,[1],0))
+        # Real world displacement vectors
+        V1 = r3d @ train_vecs[pt1]
+        V2 = r3d @ (R @ train_vecs[pt2])
+
         # Vector V: vertical stacking of 2 unit vectors v1,-v2
-        unit_vectors = np.append(train_vecs[pt1],train_vecs[pt2], axis=1)
+        unit_vectors = np.append(V1[[0,2]],-V2[[0,2]], axis=1)
         # Final guard in case allclose doesn't work properly
         if np.linalg.det(unit_vectors) < 1e-4: continue
         # Solve this matrix and get b: V[b,c]' = D
-        const = np.linalg.solve(unit_vectors,displacement)[0,0]
-        # Vector b*v1 goes from Pt1 to Pt_test: Pt_test = Pt1 + b*v1
-        loc = coords[pt1] + const * train_vecs[pt1].flatten()
+        const = np.linalg.solve(unit_vectors,displacement.T)[0,0]
+        # Vector b*V1 goes from Pt_test to Pt1: Pt_test = Pt1 - b*v1
+        loc = coords[pt1] - const * train_vecs[pt1][[0,2]].flatten()
+
+        # Clustering part
         if cluster_centrals is None:
             cluster_centrals = np.array([loc])
             cluster_count.append(1)
@@ -237,6 +284,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
     # If things go well, take the closest cluster centroid to the initial pred
     cluster_distances = np.sum((cluster_centrals - centroid)**2, axis=1)**0.5
     nearest = np.argmin(cluster_distances)
-    # If they are too far away or too inconsistent, SIFT may have been rigged, so cancel that
-    if cluster_distances[nearest] > max_displacement or np.max(cluster_count)==1: return centroid
+    # If they are too far away or too inconsistent, SIFT may have been broken
+    if cluster_distances[nearest] > max_displacement or \
+        (np.max(cluster_count)==1 and len(cluster_count)>1): return centroid
     return cluster_centrals[nearest]
