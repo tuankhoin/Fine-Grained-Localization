@@ -283,8 +283,9 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
     if cluster_centrals is None: return centroid
     # If things go well, take the closest cluster centroid to the initial pred
     cluster_distances = np.sum((cluster_centrals - centroid)**2, axis=1)**0.5
-    nearest = np.argmin(cluster_distances)
+    #nearest = np.argmin(cluster_distances)
+    biggest = np.argmax(cluster_count)
     # If they are too far away or too inconsistent, SIFT may have been broken
-    if cluster_distances[nearest] > max_displacement or \
+    if cluster_distances[biggest] > max_displacement or \
         (np.max(cluster_count)==1 and len(cluster_count)>1): return centroid
-    return cluster_centrals[nearest]
+    return cluster_centrals[biggest]
