@@ -6,6 +6,7 @@ Team member: Tuan Khoi Nguyen (1025294) and Hoang Anh Huy Luu (1025379)
 * This README file consists of file description with instructions to run scripts, in expected procedual order.
 
 ## Data Processing
+Note: All data folders are assumed to be put in the same directory as the scripts.
 
 ### Feature Extraction
 * `CNN_Extraction.ipynb`: This script runs CNN model to extract features, and calculate similarity and return top 3 most similar's average location. Default model is `keras.applications.resnet.ResNet101`. To change model, change the function name in `base_model` to another model. Examples include `ResNet50`, `ResNet101V2`, `ResNet152`,...
