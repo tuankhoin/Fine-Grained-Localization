@@ -36,5 +36,4 @@ Our created validation dataset are available in the Google Drive link below.
 * `experiment_script.ipynb`: Show best match results for each method of receiving similar images.
 
 ## Data
-Pre-processed data can be found here (UniMelb email access only):
-https://drive.google.com/drive/folders/1wCfVut7QrmFHKH4pAHWx1acBSLloNZqw?usp=sharing
+Pre-processed data can be downloaded [in this Google Drive URL](https://drive.google.com/drive/folders/1wCfVut7QrmFHKH4pAHWx1acBSLloNZqw?usp=sharing) (UniMelb email access only).
