@@ -257,7 +257,7 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
         # Final guard in case allclose doesn't work properly
         if np.linalg.det(unit_vectors) < 1e-4: continue
         # Solve this matrix and get b: V[b,c]' = D
-        const = np.linalg.solve(unit_vectors,displacement.T)[0,0]
+        const = np.linalg.solve(unit_vectors,displacement.T)[0]
         # Vector b*V1 goes from Pt_test to Pt1: Pt_test = Pt1 - b*v1
         loc = coords[pt1] - const * train_vecs[pt1][[0,2]].flatten()
 
@@ -283,8 +283,9 @@ def displacement_calculation(test_img, centroid, coords, fnames, cam_matrix,
     if cluster_centrals is None: return centroid
     # If things go well, take the closest cluster centroid to the initial pred
     cluster_distances = np.sum((cluster_centrals - centroid)**2, axis=1)**0.5
-    nearest = np.argmin(cluster_distances)
+    #nearest = np.argmin(cluster_distances)
+    biggest = np.argmax(cluster_count)
     # If they are too far away or too inconsistent, SIFT may have been broken
-    if cluster_distances[nearest] > max_displacement or \
+    if cluster_distances[biggest] > max_displacement or \
         (np.max(cluster_count)==1 and len(cluster_count)>1): return centroid
-    return cluster_centrals[nearest]
+    return cluster_centrals[biggest]
