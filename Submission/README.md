@@ -2,8 +2,8 @@
 Team member: Tuan Khoi Nguyen (1025294) and Hoang Anh Huy Luu (1025379)
 
 ## Introduction
-* The submission contains notebooks & scripts used in COMP90086 Project. 
-* This README file consists of script description with instructions to run, in expected procedual order.
+* The submission contains notebooks, scripts and result files used in COMP90086 Project. 
+* This README file consists of file description with instructions to run scripts, in expected procedual order.
 
 ## Data Processing
 
@@ -37,3 +37,6 @@ Our created validation dataset are available in the Google Drive link below.
 
 ## Data
 Pre-processed data can be downloaded [in this Google Drive URL](https://drive.google.com/drive/folders/1wCfVut7QrmFHKH4pAHWx1acBSLloNZqw?usp=sharing) (UniMelb email access only).
+
+## Results
+All results are in `.csv` files, with their names corresponding to the model run.
