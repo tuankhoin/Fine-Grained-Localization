@@ -2,7 +2,7 @@
 Team member: Tuan Khoi Nguyen (1025294) and Hoang Anh Huy Luu (1025379)
 
 ## Introduction
-* The submission contains notebooks, scripts and result files used in the Project. This approach have helped us, a team of 2 fresh Masters students at the time, reaching the 4th position on the Kaggle leaderboard, consisting of 215 teams in different levels of Graduates, many of them in their final year with much more experience.
+* The submission contains notebooks, scripts and result files used in the Project. This approach have helped us, a team of 2 fresh Masters students at the time, reaching the 4th position on the [Kaggle leaderboard](https://www.kaggle.com/c/comp90086-2021), consisting of 215 teams in different levels of Graduates, many of them in their final year with much more experience.
 * This README file consists of file description with instructions to run scripts, in expected procedual order.
 
 ## Data Processing
